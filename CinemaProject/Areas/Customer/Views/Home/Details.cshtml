@@ -1,0 +1,221 @@
+﻿@model CinemaProject.Models.Movie
+
+@{
+    ViewData["Title"] = Model.Name;
+}
+
+<style>
+    .booking-box { background-color: #1a1a1a; border-radius: 15px; padding: 30px; border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    .screen { background: linear-gradient(to bottom, #E50914, #333); height: 40px; width: 70%; margin: 0 auto 30px auto; border-radius: 50% 50% 0 0; transform: perspective(200px) rotateX(-10deg); text-align: center; color: white; font-weight: bold; line-height: 40px; letter-spacing: 5px; }
+    
+    .seat-container { display: flex; flex-direction: column; gap: 15px; align-items: center; margin-bottom: 20px; overflow-x: auto; padding-bottom: 10px; }
+    .seat-row { display: flex; gap: 10px; justify-content: center; }
+    .seat { width: 35px; height: 35px; border-radius: 8px 8px 2px 2px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; font-size: 10px; color: transparent; flex-shrink: 0; }
+    
+    /* ألوان الأقسام */
+    .seat.standard { background-color: #17a2b8; } /* أزرق */
+    .seat.deluxe { background-color: #6f42c1; } /* بنفسجي */
+    .seat.vip { background-color: #ffc107; } /* أصفر */
+    
+    .seat:hover:not(.occupied) { transform: scale(1.2); box-shadow: 0 0 10px rgba(255,255,255,0.5); }
+    .seat.selected { background-color: #E50914 !important; color: white; transform: scale(1.1); box-shadow: 0 0 15px rgba(229,9,20,0.8); }
+    .seat.occupied { background-color: #222 !important; cursor: not-allowed; border: 1px solid #111; }
+    
+    .legend { display: flex; justify-content: center; gap: 15px; margin-bottom: 20px; font-size: 13px; color: #aaa; flex-wrap: wrap;}
+    .legend-box { display: inline-block; width: 15px; height: 15px; border-radius: 3px; vertical-align: middle; margin-right: 5px; }
+    
+    .gallery-img { height: 150px; width: 100%; object-fit: cover; transition: 0.3s; cursor: pointer; }
+    .gallery-img:hover { transform: scale(1.05); box-shadow: 0 0 15px rgba(229,9,20,0.5); }
+</style>
+
+<div class="row mt-4">
+    <!-- الجزء الشمال: الصورة والممثلين -->
+    <div class="col-md-4 mb-4">
+        <img src="@Model.MainImg" class="img-fluid rounded shadow-lg" style="width: 100%; object-fit: cover; border: 2px solid rgba(255,255,255,0.1);" />
+        
+        <h5 class="text-white border-bottom pb-2 mt-4 mb-3">Top Cast</h5>
+        <div class="d-flex flex-wrap gap-3 mb-4">
+            @foreach (var actor in Model.Actors)
+            {
+                <div class="text-center" style="width: 80px;">
+                    <img src="@actor.Img" class="rounded-circle shadow mb-2" style="width: 60px; height: 60px; object-fit: cover; border: 2px solid #E50914;" />
+                    <p class="text-light mb-0" style="font-size: 0.75rem;">@actor.Name</p>
+                </div>
+            }
+        </div>
+    </div>
+    
+    <!-- الجزء اليمين: التفاصيل والحجز -->
+    <div class="col-md-8">
+        <h1 class="text-white fw-bold display-5 mb-2">
+            @Model.Name 
+            @if (Model.IsHot)
+            {
+                <span class="badge bg-warning text-dark fs-5 align-middle ms-2 shadow"><i class="fas fa-fire"></i> HOT</span>
+            }
+        </h1>
+        
+        <div class="d-flex gap-3 text-muted mb-4 fs-5">
+            <span><i class="fas fa-tag text-danger"></i> @Model.Category?.Name</span>
+            <span><i class="fas fa-clock text-danger"></i> 2h 15m</span>
+            <span><i class="fas fa-building text-danger"></i> @Model.Cinema?.Name</span>
+        </div>
+
+        <p class="text-light mb-4" style="font-size: 1.1rem; line-height: 1.6; opacity: 0.9;">@Model.Description</p>
+
+        <!-- قسم الحجز -->
+        <div class="booking-box">
+            <h4 class="text-white mb-4 text-center">Select Your Seats</h4>
+            
+            <div class="legend">
+                <div><span class="legend-box" style="background-color: #17a2b8;"></span> Standard ($@Model.Price)</div>
+                <div><span class="legend-box" style="background-color: #6f42c1;"></span> Deluxe ($@(Math.Round(Model.Price * 1.25m, 2)))</div>
+                <div><span class="legend-box" style="background-color: #ffc107;"></span> VIP ($@(Math.Round(Model.Price * 1.5m, 2)))</div>
+                <div><span class="legend-box" style="background-color: #E50914;"></span> Selected</div>
+                <div><span class="legend-box" style="background-color: #222; border: 1px solid #111;"></span> Occupied</div>
+            </div>
+            
+            <div class="screen">SCREEN</div>
+            
+            <!-- خريطة الكراسي -->
+            <div class="seat-container" id="seatContainer"></div>
+
+            <!-- ملخص الحجز -->
+            <div class="d-flex justify-content-between align-items-center mt-4 border-top border-secondary pt-4">
+                <div>
+                    <h3 class="text-success mb-1 fw-bold" id="totalPrice">$0.00</h3>
+                    <small class="text-muted" id="seatsInfo">No seats selected</small>
+                </div>
+                <button class="btn btn-danger px-5 py-3 fs-5" onclick="processPayment(@Model.Id, '@Model.Name')">
+                    <i class="fas fa-credit-card me-2"></i> Pay Now
+                </button>
+            </div>
+        </div>
+        
+        <a href="/Customer/Home/Index" class="btn btn-outline-light mt-4"><i class="fas fa-arrow-left me-2"></i>Back to Movies</a>
+    </div>
+</div>
+
+<!-- قسم الصور (SubImages Gallery) -->
+@if (Model.SubImages != null && Model.SubImages.Any())
+{
+    <div class="row mt-5">
+        <div class="col-12">
+            <h4 class="text-white border-bottom pb-2 mb-4">Movie Gallery</h4>
+        </div>
+        @foreach (var img in Model.SubImages)
+        {
+            <div class="col-md-3 col-6 mb-4">
+                <img src="@img.ImgUrl" class="img-fluid rounded shadow gallery-img" alt="Movie Scene" />
+            </div>
+        }
+    </div>
+}
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    const baseMoviePrice = @Model.Price;
+    let selectedSeats = [];
+
+    // الكراسي المحجوزة من الداتابيز
+    const dbBookedSeats = "@ViewBag.BookedSeats".split(",").filter(s => s !== "");
+
+    const seatContainer = document.getElementById('seatContainer');
+    
+    // تقسيم الصفوف: A,B استاندر | C,D ديلوكس | E VIP
+    const rows = [
+        { id: 'A', type: 'standard', priceMultiplier: 1 },
+        { id: 'B', type: 'standard', priceMultiplier: 1 },
+        { id: 'C', type: 'deluxe', priceMultiplier: 1.25 },
+        { id: 'D', type: 'deluxe', priceMultiplier: 1.25 },
+        { id: 'E', type: 'vip', priceMultiplier: 1.5 }
+    ];
+    const cols = 10;
+
+    rows.forEach(row => {
+        let rowDiv = document.createElement('div');
+        rowDiv.classList.add('seat-row');
+        
+        for (let i = 1; i <= cols; i++) {
+            let seat = document.createElement('div');
+            let seatName = `${row.id}${i}`;
+            
+            seat.classList.add('seat', row.type);
+            seat.dataset.name = seatName;
+            seat.dataset.price = (baseMoviePrice * row.priceMultiplier).toFixed(2);
+            seat.innerText = seatName;
+
+            if (dbBookedSeats.includes(seatName)) {
+                seat.classList.add('occupied');
+            } else {
+                seat.addEventListener('click', function() { toggleSeat(this); });
+            }
+            rowDiv.appendChild(seat);
+        }
+        seatContainer.appendChild(rowDiv);
+    });
+
+    function toggleSeat(seat) {
+        if (seat.classList.contains('selected')) {
+            seat.classList.remove('selected');
+            selectedSeats = selectedSeats.filter(s => s.name !== seat.dataset.name);
+        } else {
+            if (selectedSeats.length >= 8) {
+                Swal.fire('Limit Reached', 'Max 8 seats per booking.', 'warning');
+                return;
+            }
+            seat.classList.add('selected');
+            selectedSeats.push({ name: seat.dataset.name, price: parseFloat(seat.dataset.price) });
+        }
+        calculateTotal();
+    }
+
+    function calculateTotal() {
+        let total = selectedSeats.reduce((sum, seat) => sum + seat.price, 0);
+        document.getElementById('totalPrice').innerText = '$' + total.toFixed(2);
+        
+        if (selectedSeats.length > 0) {
+            document.getElementById('seatsInfo').innerText = `Seats: ${selectedSeats.map(s => s.name).join(', ')}`;
+        } else {
+            document.getElementById('seatsInfo').innerText = 'No seats selected';
+        }
+    }
+
+    function processPayment(movieId, movieName) {
+        if (selectedSeats.length === 0) {
+            Swal.fire('No Seats!', 'Please select at least one seat.', 'error');
+            return;
+        }
+
+        let seatNames = selectedSeats.map(s => s.name).join(',');
+        let totalPrice = document.getElementById('totalPrice').innerText;
+
+        Swal.fire({
+            title: 'Confirm Payment',
+            html: `<p>Movie: <b>${movieName}</b></p><p>Seats: <b class="text-danger">${seatNames}</b></p><h3 class="text-success">${totalPrice}</h3>`,
+            icon: 'info',
+            showCancelButton: true,
+            confirmButtonColor: '#E50914',
+            confirmButtonText: 'Confirm & Pay'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.showLoading();
+                
+                fetch('/Customer/Home/SaveBooking', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ movieId: movieId, seats: seatNames })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        Swal.fire('Success!', 'Your seats are booked successfully! 🍿', 'success')
+                        .then(() => { location.reload(); });
+                    } else {
+                        Swal.fire('Error', 'Something went wrong.', 'error');
+                    }
+                });
+            }
+        });
+    }
+</script>

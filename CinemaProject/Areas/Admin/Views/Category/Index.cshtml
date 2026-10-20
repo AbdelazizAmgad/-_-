@@ -1,0 +1,80 @@
+﻿@model IEnumerable<CinemaProject.Models.Category>
+
+@{
+    ViewData["Title"] = "Categories";
+}
+
+<h1>Categories List</h1>
+
+<p>
+    <a asp-action="Create" class="btn btn-primary">Create New Category</a>
+</p>
+<table class="table table-bordered table-striped">
+    <thead>
+        <tr>
+            <th>@Html.DisplayNameFor(model => model.Name)</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@Html.DisplayFor(modelItem => item.Name)</td>
+                <td>
+                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-warning btn-sm">Edit</a> |
+                    <!-- غيرنا اللينك لزرار عشان البوب أب -->
+                    <button class="btn btn-danger btn-sm delete-btn" data-id="@item.Id" data-name="@item.Name">Delete</button>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<!-- سكريبت مكتبة SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // بنمسك كل الزراير اللي واخدة كلاس delete-btn
+        const deleteButtons = document.querySelectorAll('.delete-btn');
+
+        deleteButtons.forEach(button => {
+            button.addEventListener('click', function (e) {
+                e.preventDefault();
+                const id = this.getAttribute('data-id');
+                const name = this.getAttribute('data-name');
+
+                // شكل البوب أب
+                Swal.fire({
+                    title: 'Are you sure?',
+                    text: `You are about to delete "${name}". You won't be able to revert this!`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: 'Yes, delete it!',
+                    cancelButtonText: 'No, cancel!'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // لو داس Yes، بنبعت طلب للكنترولر
+                        fetch(`/Admin/Category/Delete/${id}`, {
+                            method: 'POST'
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                // لو تم المسح بنجاح
+                                Swal.fire('Deleted!', data.message, 'success').then(() => {
+                                    location.reload(); // بيعمل ريفريش للصفحة عشان القسم يختفي
+                                });
+                            } else {
+                                Swal.fire('Error!', data.message, 'error');
+                            }
+                        });
+                    }
+                });
+            });
+        });
+    });
+</script>

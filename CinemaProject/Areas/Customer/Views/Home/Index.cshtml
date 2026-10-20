@@ -1,0 +1,46 @@
+﻿@model IEnumerable<CinemaProject.Models.Movie>
+
+@{
+    ViewData["Title"] = "Home";
+}
+
+<div class="text-center mb-5 mt-3">
+    <h1 class="fw-bold" style="font-size: 3rem;">Unlimited Movies, TV Shows, and more.</h1>
+    <p class="text-muted fs-5">Watch anywhere. Cancel anytime.</p>
+</div>
+
+<h3 class="mb-4 fw-bold" style="border-left: 4px solid #E50914; padding-left: 10px;">Now Showing</h3>
+
+<div class="row">
+    @foreach (var item in Model)
+    {
+        <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
+            <div class="movie-card h-100 position-relative">
+                @if (item.IsHot)
+
+                {
+                    <span class="badge bg-warning text-dark position-absolute top-0 start-0 m-3 fs-6 px-3 py-2 shadow" style="border-radius: 20px; z-index: 10;">
+                        <i class="fas fa-fire"></i> HOT
+                    </span>
+                }
+                <img src="@item.MainImg" class="movie-img" alt="@item.Name">
+                
+                <!-- شارة السعر -->
+                <span class="badge bg-danger position-absolute top-0 end-0 m-3 fs-6 px-3 py-2" style="border-radius: 20px;">
+                    $@item.Price
+                </span>
+
+                <div class="card-body p-3">
+                    <h5 class="card-title fw-bold text-white text-truncate">@item.Name</h5>
+                    <div class="d-flex justify-content-between text-muted mb-2" style="font-size: 0.85rem;">
+                        <span><i class="fas fa-tag me-1"></i> @item.Category?.Name</span>
+                        <span><i class="fas fa-building me-1"></i> @item.Cinema?.Name</span>
+                    </div>
+                    <a href="/Customer/Home/Details/@item.Id" class="btn btn-netflix w-100 mt-2">
+                        Book Now <i class="fas fa-ticket-alt ms-1"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    }
+</div>

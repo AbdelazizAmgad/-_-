@@ -1,0 +1,44 @@
+﻿@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<h2 class="mb-4 fw-bold">Welcome to Admin Dashboard</h2>
+
+<div class="row">
+    <div class="col-md-3 mb-4">
+        <div class="card text-white bg-primary shadow-sm h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-video fs-1 mb-2"></i>
+                <h5 class="card-title">Total Movies</h5>
+                <h1 class="display-5 fw-bold">@ViewBag.TotalMovies</h1>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-4">
+        <div class="card text-white bg-success shadow-sm h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-users fs-1 mb-2"></i>
+                <h5 class="card-title">Total Actors</h5>
+                <h1 class="display-5 fw-bold">@ViewBag.TotalActors</h1>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-4">
+        <div class="card text-white bg-warning shadow-sm h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-building fs-1 mb-2"></i>
+                <h5 class="card-title">Total Cinemas</h5>
+                <h1 class="display-5 fw-bold">@ViewBag.TotalCinemas</h1>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-4">
+        <div class="card text-white bg-danger shadow-sm h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-list fs-1 mb-2"></i>
+                <h5 class="card-title">Total Categories</h5>
+                <h1 class="display-5 fw-bold">@ViewBag.TotalCategories</h1>
+            </div>
+        </div>
+    </div>
+</div>

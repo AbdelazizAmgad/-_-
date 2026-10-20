@@ -1,0 +1,34 @@
+﻿@model CinemaProject.Models.Cinema
+
+@{
+    ViewData["Title"] = "Edit Cinema";
+}
+
+<h1>Edit Cinema</h1>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="Edit" enctype="multipart/form-data">
+            <input type="hidden" asp-for="Id" />
+            <input type="hidden" asp-for="Img" /> <!-- مهم جداً نحتفظ بمسار الصورة القديمة -->
+            <div class="form-group mb-3">
+                <label asp-for="Name" class="control-label"></label>
+                <input asp-for="Name" class="form-control" />
+                <span asp-validation-for="Name" class="text-danger"></span>
+            </div>
+            <div class="form-group mb-3">
+                <label class="control-label">Change Image (Optional)</label>
+                <input type="file" name="file" class="form-control" accept="image/*" />
+                <small class="text-muted">Leave empty to keep the current image.</small>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Save" class="btn btn-primary" />
+                <a asp-action="Index" class="btn btn-secondary">Back to List</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

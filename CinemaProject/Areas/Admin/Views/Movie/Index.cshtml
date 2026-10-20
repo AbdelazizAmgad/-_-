@@ -1,0 +1,77 @@
+﻿@model IEnumerable<CinemaProject.Models.Movie>
+
+@{
+    ViewData["Title"] = "Movies";
+}
+
+<h1>Movies List</h1>
+
+<p>
+    <a asp-action="Create" class="btn btn-primary">Create New Movie</a>
+</p>
+<table class="table table-bordered table-striped align-middle">
+    <thead>
+        <tr>
+            <th>Image</th>
+            <th>Name</th>
+            <th>Category</th>
+            <th>Cinema</th>
+            <th>Price</th>
+            <th>Status</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model) {
+        <tr>
+            <td><img src="@item.MainImg" style="width: 60px; height: 80px; object-fit: cover; border-radius: 5px;" /></td>
+            <td>@item.Name</td>
+            <td>@item.Category?.Name</td>
+            <td>@item.Cinema?.Name</td>
+            <td>@item.Price.ToString("C")</td>
+            <td>
+                @if(item.Status) { <span class="badge bg-success">Available</span> }
+                else { <span class="badge bg-danger">Not Available</span> }
+            </td>
+            <td>
+                <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-warning btn-sm">Edit</a> |
+                <button class="btn btn-danger btn-sm delete-btn" data-id="@item.Id" data-name="@item.Name">Delete</button>
+            </td>
+        </tr>
+}
+    </tbody>
+</table>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    document.querySelectorAll('.delete-btn').forEach(button => {
+        button.addEventListener('click', function (e) {
+            e.preventDefault();
+            const id = this.getAttribute('data-id');
+            const name = this.getAttribute('data-name');
+
+            Swal.fire({
+                title: 'Are you sure?',
+                text: `You are about to delete "${name}".`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Yes, delete it!',
+                cancelButtonText: 'No, cancel!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch(`/Admin/Movie/Delete/${id}`, { method: 'POST' })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire('Deleted!', data.message, 'success').then(() => location.reload());
+                        } else {
+                            Swal.fire('Error!', data.message, 'error');
+                        }
+                    });
+                }
+            });
+        });
+    });
+</script>
