@@ -1,5 +1,5 @@
-﻿using CinemaProject.Data;
-using CinemaProject.Models;
+﻿using CinemaProject.Models;
+using CinemaProject.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -9,36 +9,46 @@ namespace CinemaProject.Areas.Admin.Controllers
     [Area("Admin")]
     public class MovieController : Controller
     {
-        private readonly ApplicationDbContext _context;
+        private readonly Repository<Movie> _movieRepo;
+        private readonly Repository<Category> _categoryRepo;
+        private readonly Repository<Cinema> _cinemaRepo;
+        private readonly Repository<Actor> _actorRepo;
         private readonly IWebHostEnvironment _webHostEnvironment;
 
-        public MovieController(ApplicationDbContext context, IWebHostEnvironment webHostEnvironment)
+        public MovieController(
+            Repository<Movie> movieRepo,
+            Repository<Category> categoryRepo,
+            Repository<Cinema> cinemaRepo,
+            Repository<Actor> actorRepo,
+            IWebHostEnvironment webHostEnvironment)
         {
-            _context = context;
+            _movieRepo = movieRepo;
+            _categoryRepo = categoryRepo;
+            _cinemaRepo = cinemaRepo;
+            _actorRepo = actorRepo;
             _webHostEnvironment = webHostEnvironment;
         }
 
         public async Task<IActionResult> Index()
         {
-            var movies = await _context.Movies
+            var movies = await _movieRepo.GetQueryable()
                 .Include(m => m.Category)
                 .Include(m => m.Cinema)
                 .ToListAsync();
             return View(movies);
         }
 
-        // دالة مساعدة عشان نعبي القوائم المنسدلة والممثلين
-        private void PopulateDropDowns(int? categoryId = null, int? cinemaId = null, List<int>? selectedActors = null)
+        private async Task PopulateDropDowns(int? categoryId = null, int? cinemaId = null, List<int>? selectedActors = null)
         {
-            ViewBag.CategoryId = new SelectList(_context.Categories, "Id", "Name", categoryId);
-            ViewBag.CinemaId = new SelectList(_context.Cinemas, "Id", "Name", cinemaId);
-            ViewBag.Actors = _context.Actors.ToList();
+            ViewBag.CategoryId = new SelectList(await _categoryRepo.GetAllAsync(), "Id", "Name", categoryId);
+            ViewBag.CinemaId = new SelectList(await _cinemaRepo.GetAllAsync(), "Id", "Name", cinemaId);
+            ViewBag.Actors = await _actorRepo.GetAllAsync();
             ViewBag.SelectedActors = selectedActors ?? new List<int>();
         }
 
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
-            PopulateDropDowns();
+            await PopulateDropDowns();
             return View();
         }
 
@@ -46,7 +56,6 @@ namespace CinemaProject.Areas.Admin.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Movie movie, IFormFile MainImg, List<IFormFile> SubImages, List<int> SelectedActors)
         {
-            // شيلنا التحقق من الحقول اللي بنملأها بإيدينا
             ModelState.Remove("MainImg");
             ModelState.Remove("Category");
             ModelState.Remove("Cinema");
@@ -55,7 +64,6 @@ namespace CinemaProject.Areas.Admin.Controllers
 
             if (ModelState.IsValid)
             {
-                // 1. حفظ الصورة الرئيسية
                 if (MainImg != null && MainImg.Length > 0)
                 {
                     string folder = Path.Combine(_webHostEnvironment.WebRootPath, "images/movies");
@@ -69,18 +77,16 @@ namespace CinemaProject.Areas.Admin.Controllers
                     movie.MainImg = "/images/movies/" + fileName;
                 }
 
-                // 2. ربط الممثلين
                 movie.Actors = new List<Actor>();
                 if (SelectedActors != null && SelectedActors.Count > 0)
                 {
                     foreach (var actorId in SelectedActors)
                     {
-                        var actor = await _context.Actors.FindAsync(actorId);
+                        var actor = await _actorRepo.GetByIdAsync(actorId);
                         if (actor != null) movie.Actors.Add(actor);
                     }
                 }
 
-                // 3. حفظ الصور الفرعية
                 movie.SubImages = new List<MovieSubImage>();
                 if (SubImages != null && SubImages.Count > 0)
                 {
@@ -102,26 +108,27 @@ namespace CinemaProject.Areas.Admin.Controllers
                     }
                 }
 
-                _context.Add(movie);
-                await _context.SaveChangesAsync();
+                await _movieRepo.AddAsync(movie);
+                await _movieRepo.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
 
-            PopulateDropDowns(movie.CategoryId, movie.CinemaId, SelectedActors);
+            await PopulateDropDowns(movie.CategoryId, movie.CinemaId, SelectedActors);
             return View(movie);
         }
 
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null) return NotFound();
-            var movie = await _context.Movies
+
+            var movie = await _movieRepo.GetQueryable()
                 .Include(m => m.Actors)
                 .FirstOrDefaultAsync(m => m.Id == id);
 
             if (movie == null) return NotFound();
 
             var selectedActors = movie.Actors.Select(a => a.Id).ToList();
-            PopulateDropDowns(movie.CategoryId, movie.CinemaId, selectedActors);
+            await PopulateDropDowns(movie.CategoryId, movie.CinemaId, selectedActors);
             return View(movie);
         }
 
@@ -139,70 +146,61 @@ namespace CinemaProject.Areas.Admin.Controllers
 
             if (ModelState.IsValid)
             {
-                try
+                var existingMovie = await _movieRepo.GetQueryable()
+                    .Include(m => m.Actors)
+                    .FirstOrDefaultAsync(m => m.Id == id);
+
+                if (existingMovie == null) return NotFound();
+
+                existingMovie.Name = movie.Name;
+                existingMovie.Description = movie.Description;
+                existingMovie.Price = movie.Price;
+                existingMovie.Status = movie.Status;
+                existingMovie.IsHot = movie.IsHot; // ضفنا الـ Hot هنا
+                existingMovie.DateTime = movie.DateTime;
+                existingMovie.CategoryId = movie.CategoryId;
+                existingMovie.CinemaId = movie.CinemaId;
+
+                if (MainImg != null && MainImg.Length > 0)
                 {
-                    var existingMovie = await _context.Movies
-                        .Include(m => m.Actors)
-                        .FirstOrDefaultAsync(m => m.Id == id);
-
-                    if (existingMovie == null) return NotFound();
-
-                    existingMovie.Name = movie.Name;
-                    existingMovie.Description = movie.Description;
-                    existingMovie.Price = movie.Price;
-                    existingMovie.Status = movie.Status;
-                    existingMovie.DateTime = movie.DateTime;
-                    existingMovie.CategoryId = movie.CategoryId;
-                    existingMovie.CinemaId = movie.CinemaId;
-
-                    // تحديث الصورة الرئيسية لو تم رفع واحدة جديدة
-                    if (MainImg != null && MainImg.Length > 0)
+                    string folder = Path.Combine(_webHostEnvironment.WebRootPath, "images/movies");
+                    if (!Directory.Exists(folder)) Directory.CreateDirectory(folder);
+                    string fileName = Guid.NewGuid().ToString() + Path.GetExtension(MainImg.FileName);
+                    string filePath = Path.Combine(folder, fileName);
+                    using (var stream = new FileStream(filePath, FileMode.Create))
                     {
-                        string folder = Path.Combine(_webHostEnvironment.WebRootPath, "images/movies");
-                        if (!Directory.Exists(folder)) Directory.CreateDirectory(folder);
-                        string fileName = Guid.NewGuid().ToString() + Path.GetExtension(MainImg.FileName);
-                        string filePath = Path.Combine(folder, fileName);
-                        using (var stream = new FileStream(filePath, FileMode.Create))
-                        {
-                            await MainImg.CopyToAsync(stream);
-                        }
-                        existingMovie.MainImg = "/images/movies/" + fileName;
+                        await MainImg.CopyToAsync(stream);
                     }
-
-                    // تحديث الممثلين
-                    existingMovie.Actors.Clear();
-                    if (SelectedActors != null && SelectedActors.Count > 0)
-                    {
-                        foreach (var actorId in SelectedActors)
-                        {
-                            var actor = await _context.Actors.FindAsync(actorId);
-                            if (actor != null) existingMovie.Actors.Add(actor);
-                        }
-                    }
-
-                    _context.Update(existingMovie);
-                    await _context.SaveChangesAsync();
+                    existingMovie.MainImg = "/images/movies/" + fileName;
                 }
-                catch (DbUpdateConcurrencyException)
+
+                existingMovie.Actors.Clear();
+                if (SelectedActors != null && SelectedActors.Count > 0)
                 {
-                    if (!_context.Movies.Any(e => e.Id == id)) return NotFound();
-                    else throw;
+                    foreach (var actorId in SelectedActors)
+                    {
+                        var actor = await _actorRepo.GetByIdAsync(actorId);
+                        if (actor != null) existingMovie.Actors.Add(actor);
+                    }
                 }
+
+                _movieRepo.Update(existingMovie);
+                await _movieRepo.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
 
-            PopulateDropDowns(movie.CategoryId, movie.CinemaId, SelectedActors);
+            await PopulateDropDowns(movie.CategoryId, movie.CinemaId, SelectedActors);
             return View(movie);
         }
 
         [HttpPost]
         public async Task<IActionResult> Delete(int id)
         {
-            var movie = await _context.Movies.FindAsync(id);
+            var movie = await _movieRepo.GetByIdAsync(id);
             if (movie != null)
             {
-                _context.Movies.Remove(movie);
-                await _context.SaveChangesAsync();
+                _movieRepo.Delete(movie);
+                await _movieRepo.SaveChangesAsync();
                 return Json(new { success = true, message = "Movie deleted successfully." });
             }
             return Json(new { success = false, message = "Error while deleting." });

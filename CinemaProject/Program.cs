@@ -1,5 +1,6 @@
-using Microsoft.EntityFrameworkCore;
 using CinemaProject.Data;
+using CinemaProject.Repositories;
+using Microsoft.EntityFrameworkCore;
 
 namespace CinemaProject
 {
@@ -9,19 +10,25 @@ namespace CinemaProject
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // Add services to the container.
             builder.Services.AddControllersWithViews();
+
+            // 1. Inject DbContext
             builder.Services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+            // 2. Generic Repository (LifeTime Cycle = Scoped)
+            builder.Services.AddScoped(typeof(Repository<>));
+
             var app = builder.Build();
 
+            // Migrations
             using (var scope = app.Services.CreateScope())
             {
                 var services = scope.ServiceProvider;
                 try
                 {
                     var context = services.GetRequiredService<ApplicationDbContext>();
-                    context.Database.Migrate(); 
+                    context.Database.Migrate();
                 }
                 catch (Exception ex)
                 {
@@ -30,24 +37,21 @@ namespace CinemaProject
                 }
             }
 
-            // Configure the HTTP request pipeline.
             if (!app.Environment.IsDevelopment())
             {
                 app.UseExceptionHandler("/Home/Error");
-                // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
                 app.UseHsts();
             }
 
             app.UseHttpsRedirection();
+            app.UseStaticFiles();
             app.UseRouting();
 
-            app.UseAuthorization();
+            app.UseAuthorization(); 
 
-            app.MapStaticAssets();
             app.MapControllerRoute(
                 name: "areas",
-                pattern: "{area:exists}/{controller=Home}/{action=Index}/{id?}")
-                .WithStaticAssets();
+                pattern: "{area:exists}/{controller=Home}/{action=Index}/{id?}");
 
             app.MapControllerRoute(
                 name: "default",
