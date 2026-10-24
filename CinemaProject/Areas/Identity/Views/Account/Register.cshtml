@@ -1,0 +1,70 @@
+﻿@model CinemaProject.ViewModels.RegisterVM
+@{
+    Layout = "~/Areas/Customer/Views/Shared/_CustomerLayout.cshtml";
+    ViewData["Title"] = "Register";
+}
+<div class="container mt-5 text-white">
+    <div class="row justify-content-center">
+        <div class="col-md-6 p-4 rounded shadow" style="background-color: #1a1a1a; border: 1px solid #333;">
+            <h2 class="text-center mb-4">Create an Account</h2>
+
+            <form asp-area="Identity" asp-controller="Account" asp-action="Register" method="post">
+                @Html.AntiForgeryToken()
+                <div asp-validation-summary="All" class="text-danger fw-bold mb-3"></div>
+
+                <div class="mb-3">
+                    <label class="form-label text-light">Full Name</label>
+                    <input asp-for="FullName" class="form-control bg-dark text-white border-secondary" placeholder="Enter your full name" />
+                    <span asp-validation-for="FullName" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label text-light">Email Address</label>
+                    <input asp-for="Email" type="email" class="form-control bg-dark text-white border-secondary" placeholder="name@example.com" />
+                    <span asp-validation-for="Email" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label text-light">Password</label>
+                    <div class="position-relative">
+                        <input asp-for="Password" type="password" id="passInput" class="form-control bg-dark text-white border-secondary pe-5" placeholder="At least 6 characters" />
+                        <i class="fas fa-eye position-absolute top-50 end-0 translate-middle-y me-3 text-secondary" style="cursor: pointer;" onclick="togglePass('passInput', this)"></i>
+                    </div>
+                    <span asp-validation-for="Password" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label text-light">Confirm Password</label>
+                    <div class="position-relative">
+                        <input asp-for="ConfirmPassword" type="password" id="confirmPassInput" class="form-control bg-dark text-white border-secondary pe-5" placeholder="Confirm your password" />
+                        <i class="fas fa-eye position-absolute top-50 end-0 translate-middle-y me-3 text-secondary" style="cursor: pointer;" onclick="togglePass('confirmPassInput', this)"></i>
+                    </div>
+                    <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+                </div>
+
+                <button type="submit" class="btn btn-danger w-100 mt-3">Register</button>
+                <div class="mt-3 text-center">
+                    <a href="/Identity/Account/Login" class="text-danger text-decoration-none">Already have an account? Login</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+    <script>
+        function togglePass(id, icon) {
+            const input = document.getElementById(id);
+            if (input.type === "password") {
+                input.type = "text";
+                icon.classList.replace("fa-eye", "fa-eye-slash");
+            } else {
+                input.type = "password";
+                icon.classList.replace("fa-eye-slash", "fa-eye");
+            }
+        }
+    </script>
+}
