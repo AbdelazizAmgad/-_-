@@ -1,0 +1,45 @@
+﻿@model List<CinemaProject.Models.CartItem>
+
+<h2>Shopping Cart</h2>
+
+@if (!Model.Any())
+{
+    <p>Your cart is empty.</p>
+    <a asp-controller="Customer" asp-action="Home" class="btn btn-primary mt-3">Back to Home</a>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Movie</th>
+                <th>Showtime</th>
+                <th>Seats</th>
+                <th>Price (EGP)</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td>@item.MovieTitle</td>
+                    <td>@item.Showtime</td>
+                    <td>@string.Join(", ", item.SeatNumbers)</td>
+                    <td>@item.TotalPrice</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <div class="d-flex gap-2 mt-4">
+        <a asp-action="Checkout" class="btn btn-success btn-lg">Pay Now with Stripe</a>
+        <a asp-controller="Customer" asp-action="Home" class="btn btn-secondary">Continue Shopping</a>
+    </div>
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+}

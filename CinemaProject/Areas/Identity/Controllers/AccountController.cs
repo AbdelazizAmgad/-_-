@@ -32,39 +32,28 @@ namespace CinemaProject.Areas.Identity.Controllers
         public IActionResult Register() => View();
 
         [HttpPost]
-        public async Task<IActionResult> Register(RegisterVM registerVM)
+        public async Task<IActionResult> Register(RegisterVM model)
         {
-            if (!ModelState.IsValid) return View(registerVM);
-
-            ApplicationUser user = new ApplicationUser()
+            if (ModelState.IsValid)
             {
-                FullName = registerVM.FullName,
-                UserName = registerVM.Email,
-                Email = registerVM.Email,
-            };
+                var user = new ApplicationUser { UserName = model.Email, Email = model.Email };
+                var result = await _userManager.CreateAsync(user, model.Password);
 
-            var result = await _userManager.CreateAsync(user, registerVM.Password);
-            if (!result.Succeeded)
-            {
-                foreach (var error in result.Errors) ModelState.AddModelError("", error.Description);
-                return View(registerVM);
+                if (result.Succeeded)
+                {
+                    await _userManager.AddToRoleAsync(user, "Customer");   
+
+                    await _signInManager.SignInAsync(user, isPersistent: false);
+                    return RedirectToAction("Index", "Home", new { area = "Customer" });
+                }
+
+                foreach (var error in result.Errors)
+                {
+                    ModelState.AddModelError("", error.Description);
+                }
             }
-
-            var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-
-            // اللينك بدون تشفير زي كود الانستراكتور
-            var link = Url.Action(nameof(ConfirmEmail), "Account", new { area = "Identity", id = user.Id, token }, Request.Scheme);
-
-            await _emailSender.SendEmailAsync(
-                registerVM.Email,
-                "Cinema Confirmation Email",
-                $"<h1> please click <a href='{link}'> here </a>to confirm Your Mail</h1>"
-            );
-
-            TempData["Successful_Notification"] = "Registration Successfully";
-            return RedirectToAction(nameof(Login));
+            return View(model);
         }
-
         // ================= 2. Confirm Email =================
         [HttpGet]
         public async Task<IActionResult> ConfirmEmail(string id, string token)

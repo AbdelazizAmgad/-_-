@@ -15,5 +15,18 @@ namespace CinemaProject.Data
         public DbSet<MovieSubImage> MovieSubImages { get; set; }
         public DbSet<Booking> Bookings { get; set; }
         public DbSet<ApplicationUserOtp> ApplicationUserOtps { get; set; }
+        public DbSet<Cart> Carts { get; set; }
+        public DbSet<CartItem> CartItems { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<Cart>()
+                .HasMany(c => c.CartItems)
+                .WithOne(ci => ci.Cart)
+                .HasForeignKey(ci => ci.CartId)
+                .OnDelete(DeleteBehavior.Cascade);
+        }
     }
 }

@@ -1,10 +1,13 @@
 ﻿using CinemaProject.Models;
 using CinemaProject.Repositories;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CinemaProject.Areas.Admin.Controllers
 {
     [Area("Admin")]
+    [Authorize(Roles = "Admin")]
+
     public class ActorController : Controller
     {
         private readonly Repository<Actor> _actorRepo;

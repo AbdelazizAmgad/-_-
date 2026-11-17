@@ -1,0 +1,16 @@
+﻿<div>
+	<h2>My Bookings</h2>
+
+	<table class="table table-striped">
+		<thead>
+			<tr>
+				<th>Movie</th>
+				<th>Showtime</th>
+				<th>Seats</th>
+				<th>Date</th>
+			</tr>
+		</thead>
+		<tbody>
+		</tbody>
+	</table>
+</div>
